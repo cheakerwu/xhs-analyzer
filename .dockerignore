@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.venv
+venv
+
+# Runtime data (mounted as volumes, not baked in)
+data/
+browser_data/
+MediaCrawler-main/browser_data/
+MediaCrawler-main/data/
+MediaCrawler-main/__pycache__/
+
+# Secrets
+.env
+.env.*
+*.local
+config.local.json
+
+# Build artifacts
+release/
+*.zip
+dist/
+coverage/
+*.log
+logs/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Docker (don't send docker files into build context)
+docker-compose*.yml
+Dockerfile*
+README.md
+docs/
+scripts/
+start.bat

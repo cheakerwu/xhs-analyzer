@@ -24,6 +24,11 @@ app.add_middleware(
 )
 
 
+@app.get("/api/healthz")
+async def healthz() -> dict:
+    return {"status": "ok"}
+
+
 @app.get("/api/health")
 async def health() -> dict:
     llm_settings = get_public_llm_settings()

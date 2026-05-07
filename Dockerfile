@@ -7,17 +7,27 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONUTF8=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
+# Install dependencies first (cached unless requirements change)
 COPY MediaCrawler-main/requirements.txt /tmp/mediacrawler-requirements.txt
+COPY requirements-app.txt /tmp/requirements-app.txt
 
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /tmp/mediacrawler-requirements.txt \
-    && python -m pip install "fastapi>=0.115" "uvicorn>=0.32" "pydantic>=2.10"
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r /tmp/mediacrawler-requirements.txt \
+    && python -m pip install --no-cache-dir -r /tmp/requirements-app.txt \
+    && rm /tmp/mediacrawler-requirements.txt /tmp/requirements-app.txt
 
-COPY app ./app
-COPY web ./web
-COPY MediaCrawler-main ./MediaCrawler-main
+# Create non-root user before copying app code
+RUN groupadd -g 1001 appgroup \
+    && useradd -u 1001 -g appgroup -m -s /bin/bash appuser \
+    && mkdir -p /app/data/runs /app/data/history \
+    && chown -R appuser:appgroup /app
 
-RUN mkdir -p /app/data/runs /app/data/history
+# Copy application code
+COPY --chown=appuser:appgroup app ./app
+COPY --chown=appuser:appgroup web ./web
+COPY --chown=appuser:appgroup MediaCrawler-main ./MediaCrawler-main
+
+USER appuser
 
 EXPOSE 8088
 

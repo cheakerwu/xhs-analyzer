@@ -22,11 +22,7 @@ config.local.json
 
 # Build and release artifacts
 release/
-release/*.zip
-release/runtime.zip
-release/xhs-analyzer-portable/
-
-# Logs
+*.zip
 *.log
 logs/
 
@@ -35,3 +31,44 @@ logs/
 Thumbs.db
 .idea/
 .vscode/
+
+# MediaCrawler upstream (not needed for xhs-analyzer)
+MediaCrawler-main/.github/
+MediaCrawler-main/.pre-commit-config.yaml
+MediaCrawler-main/.python-version
+MediaCrawler-main/.gitattributes
+MediaCrawler-main/.gitignore
+MediaCrawler-main/.env.example
+MediaCrawler-main/LICENSE
+MediaCrawler-main/README*.md
+MediaCrawler-main/package*.json
+MediaCrawler-main/mypy.ini
+MediaCrawler-main/docs/
+MediaCrawler-main/api/
+MediaCrawler-main/__pycache__/
+
+# MediaCrawler unused platforms (only xhs is used)
+MediaCrawler-main/media_platform/bilibili/
+MediaCrawler-main/media_platform/douyin/
+MediaCrawler-main/media_platform/kuaishou/
+MediaCrawler-main/media_platform/tieba/
+MediaCrawler-main/media_platform/weibo/
+MediaCrawler-main/media_platform/zhihu/
+MediaCrawler-main/store/bilibili/
+MediaCrawler-main/store/douyin/
+MediaCrawler-main/store/kuaishou/
+MediaCrawler-main/store/tieba/
+MediaCrawler-main/store/weibo/
+MediaCrawler-main/store/zhihu/
+MediaCrawler-main/config/bilibili_config.py
+MediaCrawler-main/config/dy_config.py
+MediaCrawler-main/config/ks_config.py
+MediaCrawler-main/config/weibo_config.py
+MediaCrawler-main/config/tieba_config.py
+MediaCrawler-main/config/zhihu_config.py
+MediaCrawler-main/model/m_baidu_tieba.py
+MediaCrawler-main/model/m_bilibili.py
+MediaCrawler-main/model/m_douyin.py
+MediaCrawler-main/model/m_kuaishou.py
+MediaCrawler-main/model/m_weibo.py
+MediaCrawler-main/model/m_zhihu.py

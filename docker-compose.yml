@@ -16,3 +16,19 @@ services:
       - ./data:/app/data
       - ./browser_data:/app/MediaCrawler-main/browser_data
     shm_size: "1gb"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8088/api/healthz')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
+        reservations:
+          cpus: "0.5"
+          memory: 1G
+    security_opt:
+      - no-new-privileges:true
