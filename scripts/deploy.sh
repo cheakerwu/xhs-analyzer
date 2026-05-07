@@ -3,6 +3,23 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Configure Docker mirror for China region (skip if already configured)
+DOCKER_DAEMON="/etc/docker/daemon.json"
+if [ ! -f "$DOCKER_DAEMON" ] || ! grep -q "registry-mirrors" "$DOCKER_DAEMON" 2>/dev/null; then
+  mkdir -p /etc/docker
+  cat > "$DOCKER_DAEMON" <<'MIRROR'
+{
+  "registry-mirrors": [
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me"
+  ]
+}
+MIRROR
+  systemctl daemon-reload
+  systemctl restart docker
+  echo "Docker mirror configured."
+fi
+
 if [ ! -f .env ]; then
   cp .env.example .env
 fi

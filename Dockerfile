@@ -7,6 +7,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONUTF8=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
+# Use Chinese pip mirror
+ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+
 # Install dependencies first (cached unless requirements change)
 COPY MediaCrawler-main/requirements.txt /tmp/mediacrawler-requirements.txt
 COPY requirements-app.txt /tmp/requirements-app.txt

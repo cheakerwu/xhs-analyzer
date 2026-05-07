@@ -36,6 +36,8 @@ chmod +x scripts/*.sh
 ```
 
 部署脚本会自动：
+- 配置 Docker 国内镜像加速（`/etc/docker/daemon.json`）
+- 使用清华 pip 镜像源安装 Python 依赖
 - 构建并启动 Docker 容器
 - 如果检测到 Nginx 已安装，自动配置反向代理并重载
 
