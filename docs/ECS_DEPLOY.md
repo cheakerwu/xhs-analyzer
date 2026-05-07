@@ -8,6 +8,7 @@
 - 2 核 4GB 起步，推荐 2 核 8GB
 - 磁盘 40GB 以上
 - 安全组开放 `80`（Nginx）和 `8088`（直连调试用）
+- 支持 Ubuntu / Debian / CentOS / Alibaba Cloud Linux
 
 ## 首次部署
 
