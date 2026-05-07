@@ -23,7 +23,7 @@ async function checkHealth() {
     const response = await fetch("/api/health");
     if (!response.ok) throw new Error("服务异常");
     const health = await response.json();
-    healthStatus.textContent = health.llm_enabled ? `服务已就绪 · AI ${health.llm_model}` : "服务已就绪 · 未配置 AI";
+    healthStatus.textContent = health.llm_enabled ? "服务已就绪 · AI 已启用" : "服务已就绪 · 未配置 AI";
     healthStatus.classList.add("ok");
   } catch (error) {
     healthStatus.textContent = "服务未启动";
@@ -31,12 +31,13 @@ async function checkHealth() {
   }
 }
 
+let currentLlmSettings = {};
+
 async function loadLlmSettings() {
   try {
     const settings = await fetch("/api/settings/llm").then((res) => res.json());
+    currentLlmSettings = settings;
     document.querySelector("#llmEnabled").checked = Boolean(settings.enabled);
-    document.querySelector("#llmBaseUrl").value = settings.base_url || "https://api.openai.com/v1";
-    document.querySelector("#llmModel").value = settings.model || "gpt-4o-mini";
     document.querySelector("#llmApiKey").value = "";
     llmStateText.textContent = settings.has_api_key ? "已保存 Key" : "未保存 Key";
   } catch (error) {
@@ -49,8 +50,8 @@ llmForm.addEventListener("submit", async (event) => {
   llmStateText.textContent = "保存中";
   const payload = {
     enabled: document.querySelector("#llmEnabled").checked,
-    base_url: document.querySelector("#llmBaseUrl").value.trim() || "https://api.openai.com/v1",
-    model: document.querySelector("#llmModel").value.trim() || "gpt-4o-mini",
+    base_url: currentLlmSettings.base_url || "https://api.openai.com/v1",
+    model: currentLlmSettings.model || "gpt-4o-mini",
     api_key: document.querySelector("#llmApiKey").value.trim(),
   };
   try {
