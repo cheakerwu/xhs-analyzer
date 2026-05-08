@@ -19,6 +19,7 @@
 
 
 import asyncio
+import os
 import functools
 import sys
 from typing import Optional
@@ -56,10 +57,10 @@ class XiaoHongShuLogin(AbstractLogin):
         # 1. Priority check: Check if the "Me" (Profile) node appears in the sidebar
         try:
             # Selector for elements containing "Me" text with a link pointing to the profile
-            # XPath Explanation: Find a span with text "Me" inside an anchor tag (<a>) 
+            # XPath Explanation: Find a span with text "Me" inside an anchor tag (<a>)
             # whose href attribute contains "/user/profile/"
             user_profile_selector = "xpath=//a[contains(@href, '/user/profile/')]//span[text()='我']"
-            
+
             # Set a short timeout since this is called within a retry loop
             is_visible = await self.context_page.is_visible(user_profile_selector, timeout=500)
             if is_visible:
@@ -68,9 +69,20 @@ class XiaoHongShuLogin(AbstractLogin):
         except Exception:
             pass
 
-        # 2. Alternative: Check for CAPTCHA prompt
-        if "请通过验证" in await self.context_page.content():
-            utils.logger.info("[XiaoHongShuLogin.check_login_state] CAPTCHA appeared, please verify manually.")
+        # 2. Alternative: Check for verification prompts (SMS/CAPTCHA) and capture screenshot
+        page_content = await self.context_page.content()
+        if "请通过验证" in page_content or "短信验证码" in page_content or "安全验证" in page_content:
+            qrcode_file = os.getenv("XHS_QRCODE_FILE")
+            if qrcode_file:
+                try:
+                    screenshot = await self.context_page.screenshot()
+                    from PIL import Image
+                    from io import BytesIO
+                    img = Image.open(BytesIO(screenshot))
+                    img.save(qrcode_file)
+                    utils.logger.info("[check_login_state] 需要安全验证，已截图到前端展示。")
+                except Exception:
+                    utils.logger.info("[check_login_state] CAPTCHA/SMS verification detected, please verify manually.")
 
         # 3. Compatibility fallback: Original Cookie-based change detection
         current_cookie = await self.browser_context.cookies()
