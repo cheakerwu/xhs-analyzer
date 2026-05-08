@@ -275,13 +275,21 @@ async function pollTask(taskId) {
       renderLogs(task.logs || []);
 
       // Check if QR code login is needed
-      const needsQrcode = (task.logs || []).some(
-        (l) => l.includes("扫码") || l.includes("qrcode") || l.includes("waiting for scan")
+      const logs = task.logs || [];
+      const loginSuccess = logs.some(
+        (l) => l.includes("Login successful") || l.includes("登录成功") || l.includes("Login state result: True")
       );
-      if (needsQrcode && task.status === "running") {
-        tryFetchQrcode(taskId);
-      } else {
+      if (loginSuccess) {
         hideQrcode();
+      } else {
+        const needsQrcode = logs.some(
+          (l) => l.includes("扫码") || l.includes("qrcode") || l.includes("waiting for scan")
+        );
+        if (needsQrcode && task.status === "running") {
+          tryFetchQrcode(taskId);
+        } else {
+          hideQrcode();
+        }
       }
 
       if (task.status === "completed") {
