@@ -158,15 +158,30 @@
       </section>
     </main>
 
-    <div id="qrcodeOverlay" class="qrcode-overlay hidden">
-      <div class="qrcode-modal">
-        <h3 id="qrcodeTitle">请扫码登录小红书</h3>
-        <img id="qrcodeImage" src="" alt="登录二维码" />
-        <p id="qrcodeHint">使用小红书 App 扫描二维码，120秒内有效</p>
-        <div id="smsCodeSection" class="hidden">
-          <p>小红书已发送短信验证码到你的手机</p>
-          <input id="smsCodeInput" type="text" placeholder="输入验证码" maxlength="6" />
-          <button id="smsCodeSubmit" class="primary-button" type="button">提交验证码</button>
+    <div id="loginOverlay" class="login-overlay hidden">
+      <div class="login-modal">
+        <div class="login-header">
+          <h3 id="loginTitle">正在登录...</h3>
+          <button id="loginCancel" class="ghost-button" type="button">取消任务</button>
+        </div>
+        <div class="login-screenshot-wrap">
+          <img id="loginScreenshot" src="" alt="浏览器画面" />
+        </div>
+        <div id="loginQrcodeArea" class="login-area hidden">
+          <p id="loginHint">使用小红书 App 扫描二维码</p>
+        </div>
+        <div id="loginSmsArea" class="login-area hidden">
+          <p id="loginSmsHint">小红书已发送短信验证码到你的手机</p>
+          <div class="sms-input-row">
+            <input id="loginSmsInput" type="text" placeholder="输入验证码" maxlength="6" />
+            <button id="loginSmsSubmit" class="primary-button" type="button">提交</button>
+          </div>
+          <p id="loginSmsError" class="hint error-text hidden"></p>
+          <p id="loginSmsAttempts" class="hint"></p>
+        </div>
+        <div id="loginFailedArea" class="login-area hidden">
+          <p id="loginFailedMsg" class="error-text"></p>
+          <button id="loginRetry" class="ghost-button" type="button">重新尝试</button>
         </div>
       </div>
     </div>

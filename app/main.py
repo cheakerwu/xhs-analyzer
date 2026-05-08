@@ -101,6 +101,49 @@ async def submit_sms_code(task_id: str, body: dict) -> dict:
     return {"status": "ok"}
 
 
+@app.get("/api/login_state/{task_id}")
+async def login_state(task_id: str) -> dict:
+    import json as _json
+
+    task = task_manager.get(task_id)
+    if not task or not task.login_state_file:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    if not task.login_state_file.exists():
+        return {"state": "unknown", "message": "等待登录状态..."}
+    try:
+        text = task.login_state_file.read_text(encoding="utf-8").strip()
+        if not text:
+            return {"state": "unknown", "message": "等待登录状态..."}
+        return _json.loads(text)
+    except Exception:
+        return {"state": "unknown", "message": "读取状态失败"}
+
+
+@app.get("/api/screenshot/{task_id}")
+async def screenshot_image(task_id: str) -> Response:
+    task = task_manager.get(task_id)
+    if not task or not task.screenshot_file or not task.screenshot_file.exists():
+        return Response(
+            content='{"detail":"暂无截图"}',
+            media_type="application/json",
+            status_code=404,
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+        )
+    return FileResponse(
+        task.screenshot_file,
+        media_type="image/png",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+    )
+
+
+@app.post("/api/cancel/{task_id}")
+async def cancel_task(task_id: str) -> dict:
+    success = await task_manager.cancel(task_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="任务不存在或已结束")
+    return {"status": "cancelled"}
+
+
 @app.get("/api/history", response_model=list[HistoryItem])
 async def history_items() -> list[dict]:
     return list_history()

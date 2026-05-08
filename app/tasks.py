@@ -46,6 +46,9 @@ class AnalysisTask:
     created_at: datetime = field(default_factory=datetime.now)
     qrcode_file: Path | None = None
     sms_code_file: Path | None = None
+    screenshot_file: Path | None = None
+    login_state_file: Path | None = None
+    process: asyncio.subprocess.Process | None = None
 
     def add_log(self, message: str) -> None:
         stamp = datetime.now().strftime("%H:%M:%S")
@@ -66,6 +69,17 @@ class TaskManager:
 
     def get(self, task_id: str) -> AnalysisTask | None:
         return self.tasks.get(task_id)
+
+    async def cancel(self, task_id: str) -> bool:
+        task = self.tasks.get(task_id)
+        if not task:
+            return False
+        if task.process and task.process.returncode is None:
+            task.process.terminate()
+        task.status = "cancelled"
+        task.stage = "已取消"
+        task.add_log("任务已被用户取消。")
+        return True
 
     async def _run(self, task: AnalysisTask) -> None:
         async with self._lock:
@@ -163,11 +177,15 @@ class TaskManager:
             headless=task.request.headless,
         )
 
-        # QR code file for remote login
+        # QR code / login state files for remote login
         qrcode_path = RUN_DATA_ROOT / f"{task.task_id}_qrcode.png"
         sms_code_path = RUN_DATA_ROOT / f"{task.task_id}_sms_code.txt"
+        screenshot_path = RUN_DATA_ROOT / f"{task.task_id}_screenshot.png"
+        login_state_path = RUN_DATA_ROOT / f"{task.task_id}_login_state.json"
         task.qrcode_file = qrcode_path
         task.sms_code_file = sms_code_path
+        task.screenshot_file = screenshot_path
+        task.login_state_file = login_state_path
 
         env = {
             **os.environ,
@@ -175,6 +193,8 @@ class TaskManager:
             "PYTHONIOENCODING": "utf-8",
             "XHS_QRCODE_FILE": str(qrcode_path),
             "XHS_SMS_CODE_FILE": str(sms_code_path),
+            "XHS_SCREENSHOT_FILE": str(screenshot_path),
+            "XHS_LOGIN_STATE_FILE": str(login_state_path),
         }
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -183,6 +203,7 @@ class TaskManager:
             stderr=asyncio.subprocess.STDOUT,
             env=env,
         )
+        task.process = process
 
         assert process.stdout is not None
         async for raw_line in process.stdout:
@@ -216,8 +237,8 @@ def _cleanup_browser_locks() -> None:
 
 
 def _cleanup_qrcode(task: AnalysisTask) -> None:
-    """Remove temporary QR code and SMS code files after task completes."""
-    for f in (task.qrcode_file, task.sms_code_file):
+    """Remove temporary login-related files after task completes."""
+    for f in (task.qrcode_file, task.sms_code_file, task.screenshot_file, task.login_state_file):
         if f and f.exists():
             try:
                 f.unlink()

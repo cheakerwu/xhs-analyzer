@@ -8,13 +8,23 @@ const results = document.querySelector("#results");
 const historyList = document.querySelector("#historyList");
 const llmForm = document.querySelector("#llmForm");
 const llmStateText = document.querySelector("#llmStateText");
-const qrcodeOverlay = document.querySelector("#qrcodeOverlay");
-const qrcodeImage = document.querySelector("#qrcodeImage");
-const qrcodeTitle = document.querySelector("#qrcodeTitle");
-const qrcodeHint = document.querySelector("#qrcodeHint");
-const smsCodeSection = document.querySelector("#smsCodeSection");
-const smsCodeInput = document.querySelector("#smsCodeInput");
-const smsCodeSubmit = document.querySelector("#smsCodeSubmit");
+
+// Login overlay elements
+const loginOverlay = document.querySelector("#loginOverlay");
+const loginTitle = document.querySelector("#loginTitle");
+const loginScreenshot = document.querySelector("#loginScreenshot");
+const loginQrcodeArea = document.querySelector("#loginQrcodeArea");
+const loginHint = document.querySelector("#loginHint");
+const loginSmsArea = document.querySelector("#loginSmsArea");
+const loginSmsHint = document.querySelector("#loginSmsHint");
+const loginSmsInput = document.querySelector("#loginSmsInput");
+const loginSmsSubmit = document.querySelector("#loginSmsSubmit");
+const loginSmsError = document.querySelector("#loginSmsError");
+const loginSmsAttempts = document.querySelector("#loginSmsAttempts");
+const loginFailedArea = document.querySelector("#loginFailedArea");
+const loginFailedMsg = document.querySelector("#loginFailedMsg");
+const loginCancel = document.querySelector("#loginCancel");
+const loginRetry = document.querySelector("#loginRetry");
 
 const metricNames = {
   avg_engagement: "平均互动",
@@ -24,6 +34,12 @@ const metricNames = {
   hit_rate: "高表现稳定度",
   avg_text_length: "正文长度",
 };
+
+let currentPollId = 0;
+let loginPollTimer = null;
+let currentTaskId = null;
+
+// --- Health & LLM Settings ---
 
 async function checkHealth() {
   try {
@@ -77,6 +93,8 @@ llmForm.addEventListener("submit", async (event) => {
   }
 });
 
+// --- Utilities ---
+
 function valueText(key, value) {
   const num = Number(value || 0);
   if (["collection_rate", "comment_rate", "share_rate", "hit_rate"].includes(key)) {
@@ -108,6 +126,175 @@ function addList(id, items) {
     list.appendChild(li);
   }
 }
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+// --- Login State Machine ---
+
+function startLoginPolling(taskId) {
+  currentTaskId = taskId;
+  stopLoginPolling();
+  loginPollTimer = setInterval(() => pollLoginState(taskId), 1500);
+}
+
+function stopLoginPolling() {
+  if (loginPollTimer) {
+    clearInterval(loginPollTimer);
+    loginPollTimer = null;
+  }
+  currentTaskId = null;
+}
+
+async function pollLoginState(taskId) {
+  try {
+    const resp = await fetch(`/api/login_state/${taskId}?t=${Date.now()}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    handleLoginState(taskId, data);
+  } catch {
+    // network hiccup, keep polling
+  }
+}
+
+function handleLoginState(taskId, data) {
+  switch (data.state) {
+    case "waiting_for_scan":
+      showLoginOverlay();
+      loginTitle.textContent = "请扫码登录";
+      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+      loginQrcodeArea.classList.remove("hidden");
+      loginHint.textContent = data.message || "使用小红书 App 扫描二维码";
+      loginSmsArea.classList.add("hidden");
+      loginFailedArea.classList.add("hidden");
+      break;
+
+    case "sms_needed":
+      showLoginOverlay();
+      loginTitle.textContent = "需要安全验证";
+      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+      loginQrcodeArea.classList.add("hidden");
+      loginSmsArea.classList.remove("hidden");
+      loginSmsHint.textContent = data.message || "请输入短信验证码";
+      loginFailedArea.classList.add("hidden");
+
+      loginSmsAttempts.textContent = `剩余尝试次数：${(data.max_sms_attempts || 3) - (data.sms_attempts || 0)}`;
+      if (data.sms_attempts > 0) {
+        loginSmsError.textContent = "验证码错误，请重新输入";
+        loginSmsError.classList.remove("hidden");
+        loginSmsInput.value = "";
+        loginSmsInput.focus();
+      } else {
+        loginSmsError.classList.add("hidden");
+      }
+      break;
+
+    case "captcha":
+      showLoginOverlay();
+      loginTitle.textContent = "需要验证";
+      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+      loginQrcodeArea.classList.remove("hidden");
+      loginHint.textContent = data.message || "遇到验证码，请在浏览器中手动完成";
+      loginSmsArea.classList.add("hidden");
+      loginFailedArea.classList.add("hidden");
+      break;
+
+    case "logged_in":
+      stopLoginPolling();
+      hideLoginOverlay();
+      break;
+
+    case "login_failed":
+      stopLoginPolling();
+      loginTitle.textContent = "登录失败";
+      loginQrcodeArea.classList.add("hidden");
+      loginSmsArea.classList.add("hidden");
+      loginFailedArea.classList.remove("hidden");
+      loginFailedMsg.textContent = data.message || "登录失败，请重新尝试";
+      loginRetry.classList.remove("hidden");
+      break;
+
+    default:
+      // unknown state — keep waiting
+      break;
+  }
+}
+
+function showLoginOverlay() {
+  loginOverlay.classList.remove("hidden");
+}
+
+function hideLoginOverlay() {
+  loginOverlay.classList.add("hidden");
+  loginQrcodeArea.classList.add("hidden");
+  loginSmsArea.classList.add("hidden");
+  loginFailedArea.classList.add("hidden");
+  if (loginScreenshot.src) {
+    URL.revokeObjectURL(loginScreenshot.src);
+    loginScreenshot.src = "";
+  }
+  loginSmsInput.value = "";
+  loginSmsError.classList.add("hidden");
+}
+
+// SMS code submission
+loginSmsSubmit.addEventListener("click", async () => {
+  if (!currentTaskId) return;
+  const code = loginSmsInput.value.trim();
+  if (!code) return;
+  loginSmsSubmit.disabled = true;
+  loginSmsSubmit.textContent = "提交中...";
+  try {
+    await fetch(`/api/sms_code/${currentTaskId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    loginSmsError.classList.add("hidden");
+    loginSmsHint.textContent = "验证码已提交，等待验证...";
+  } catch {
+    loginSmsError.textContent = "提交失败，请重试";
+    loginSmsError.classList.remove("hidden");
+  } finally {
+    loginSmsSubmit.disabled = false;
+    loginSmsSubmit.textContent = "提交";
+  }
+});
+
+// Enter key in SMS input
+loginSmsInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    loginSmsSubmit.click();
+  }
+});
+
+// Cancel button
+loginCancel.addEventListener("click", async () => {
+  if (!currentTaskId) return;
+  try {
+    await fetch(`/api/cancel/${currentTaskId}`, { method: "POST" });
+  } catch { /* ignore */ }
+  stopLoginPolling();
+  hideLoginOverlay();
+  submitButton.disabled = false;
+  submitButton.textContent = "重新分析";
+  stageText.textContent = "已取消";
+});
+
+// Retry button
+loginRetry.addEventListener("click", () => {
+  hideLoginOverlay();
+  // Re-submit the last form data
+  form.dispatchEvent(new Event("submit"));
+});
+
+// --- Results Rendering ---
 
 function renderCompareHero(data) {
   const mine = data.mine;
@@ -251,18 +438,13 @@ function tag(text, tone) {
   return span;
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-let currentPollId = 0;
+// --- Task Polling ---
 
 async function pollTask(taskId) {
   const pollId = ++currentPollId;
+  // Start login state polling
+  startLoginPolling(taskId);
+
   while (pollId === currentPollId) {
     try {
       const response = await fetch(`/api/tasks/${taskId}`);
@@ -271,7 +453,8 @@ async function pollTask(taskId) {
         renderLogs(["任务不存在或已过期，请重新提交。"]);
         submitButton.disabled = false;
         submitButton.textContent = "重新分析";
-        hideQrcode();
+        stopLoginPolling();
+        hideLoginOverlay();
         return;
       }
       const task = await response.json();
@@ -279,43 +462,21 @@ async function pollTask(taskId) {
       progressBar.style.width = `${task.progress}%`;
       renderLogs(task.logs || []);
 
-      // Check if QR code login is needed
-      const logs = task.logs || [];
-      const loginSuccess = logs.some(
-        (l) => l.includes("扫码登录成功") || l.includes("Login successful") || l.includes("Login state result: True")
-      );
-      if (loginSuccess) {
-        hideQrcode();
-      } else {
-        const needsSms = logs.some(
-          (l) => l.includes("需要短信验证码") || l.includes("安全验证")
-        );
-        const needsQrcode = logs.some(
-          (l) => l.includes("扫码") || l.includes("qrcode") || l.includes("waiting for scan")
-        );
-        if (needsSms && task.status === "running") {
-          tryFetchQrcode(taskId);
-          showSmsInput(taskId);
-        } else if (needsQrcode && task.status === "running") {
-          tryFetchQrcode(taskId);
-        } else {
-          hideQrcode();
-        }
-      }
-
       if (task.status === "completed") {
+        stopLoginPolling();
+        hideLoginOverlay();
         submitButton.disabled = false;
         submitButton.textContent = "重新分析";
-        hideQrcode();
         renderResults(task.result);
         return;
       }
 
-      if (task.status === "failed") {
+      if (task.status === "failed" || task.status === "cancelled") {
+        stopLoginPolling();
+        hideLoginOverlay();
         submitButton.disabled = false;
         submitButton.textContent = "重新分析";
-        stageText.textContent = "失败";
-        hideQrcode();
+        stageText.textContent = task.status === "cancelled" ? "已取消" : "失败";
         renderLogs([...(task.logs || []), task.error || "任务失败"]);
         return;
       }
@@ -327,52 +488,7 @@ async function pollTask(taskId) {
   }
 }
 
-async function tryFetchQrcode(taskId) {
-  try {
-    const resp = await fetch(`/api/qrcode/${taskId}?t=${Date.now()}`);
-    if (resp.ok) {
-      const blob = await resp.blob();
-      qrcodeImage.src = URL.createObjectURL(blob);
-      qrcodeOverlay.classList.remove("hidden");
-    }
-  } catch {
-    // not ready yet
-  }
-}
-
-function hideQrcode() {
-  qrcodeOverlay.classList.add("hidden");
-  smsCodeSection.classList.add("hidden");
-  if (qrcodeImage.src) {
-    URL.revokeObjectURL(qrcodeImage.src);
-    qrcodeImage.src = "";
-  }
-}
-
-function showSmsInput(taskId) {
-  qrcodeTitle.textContent = "需要安全验证";
-  qrcodeHint.textContent = "";
-  smsCodeSection.classList.remove("hidden");
-  smsCodeInput.focus();
-  smsCodeSubmit.onclick = async () => {
-    const code = smsCodeInput.value.trim();
-    if (!code) return;
-    smsCodeSubmit.disabled = true;
-    smsCodeSubmit.textContent = "提交中...";
-    try {
-      await fetch(`/api/sms_code/${taskId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      smsCodeSection.classList.add("hidden");
-      qrcodeTitle.textContent = "验证码已提交，等待验证...";
-    } catch {
-      smsCodeSubmit.disabled = false;
-      smsCodeSubmit.textContent = "重新提交";
-    }
-  };
-}
+// --- History ---
 
 async function loadHistory() {
   try {
@@ -405,10 +521,13 @@ async function loadHistory() {
 
 document.querySelector("#refreshHistory").addEventListener("click", loadHistory);
 
+// --- Form Submission ---
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   currentPollId++; // cancel any running poll loop
-  hideQrcode();
+  stopLoginPolling();
+  hideLoginOverlay();
   results.classList.add("hidden");
   submitButton.disabled = true;
   submitButton.textContent = "分析中";
@@ -443,6 +562,8 @@ form.addEventListener("submit", async (event) => {
     renderLogs([error.message || "提交失败"]);
   }
 });
+
+// --- Init ---
 
 checkHealth();
 loadLlmSettings();
