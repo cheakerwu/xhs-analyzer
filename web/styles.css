@@ -696,3 +696,36 @@ input:focus {
   font-size: 0.85rem;
   color: var(--muted, #66736b);
 }
+
+.qrcode-modal .hidden {
+  display: none;
+}
+
+#smsCodeSection {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+#smsCodeSection p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text, #1d2520);
+}
+
+#smsCodeInput {
+  width: 180px;
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: 0.3em;
+  padding: 8px 12px;
+  border: 2px solid var(--green, #2f7d57);
+  border-radius: 8px;
+  outline: none;
+}
+
+#smsCodeSubmit {
+  width: 180px;
+}

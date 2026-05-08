@@ -45,6 +45,7 @@ class AnalysisTask:
     error: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
     qrcode_file: Path | None = None
+    sms_code_file: Path | None = None
 
     def add_log(self, message: str) -> None:
         stamp = datetime.now().strftime("%H:%M:%S")
@@ -164,13 +165,16 @@ class TaskManager:
 
         # QR code file for remote login
         qrcode_path = RUN_DATA_ROOT / f"{task.task_id}_qrcode.png"
+        sms_code_path = RUN_DATA_ROOT / f"{task.task_id}_sms_code.txt"
         task.qrcode_file = qrcode_path
+        task.sms_code_file = sms_code_path
 
         env = {
             **os.environ,
             "PYTHONUNBUFFERED": "1",
             "PYTHONIOENCODING": "utf-8",
             "XHS_QRCODE_FILE": str(qrcode_path),
+            "XHS_SMS_CODE_FILE": str(sms_code_path),
         }
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -212,12 +216,13 @@ def _cleanup_browser_locks() -> None:
 
 
 def _cleanup_qrcode(task: AnalysisTask) -> None:
-    """Remove temporary QR code file after task completes."""
-    if task.qrcode_file and task.qrcode_file.exists():
-        try:
-            task.qrcode_file.unlink()
-        except OSError:
-            pass
+    """Remove temporary QR code and SMS code files after task completes."""
+    for f in (task.qrcode_file, task.sms_code_file):
+        if f and f.exists():
+            try:
+                f.unlink()
+            except OSError:
+                pass
 
 
 def compact_log(line: str) -> str:

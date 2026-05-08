@@ -69,22 +69,16 @@ class XiaoHongShuLogin(AbstractLogin):
         except Exception:
             pass
 
-        # 2. Alternative: Check for verification prompts (SMS/CAPTCHA) and capture screenshot
+        # 2. Check for SMS verification prompt and wait for user input
         page_content = await self.context_page.content()
-        if "请通过验证" in page_content or "短信验证码" in page_content or "安全验证" in page_content:
-            qrcode_file = os.getenv("XHS_QRCODE_FILE")
-            if qrcode_file:
-                try:
-                    screenshot = await self.context_page.screenshot()
-                    from PIL import Image
-                    from io import BytesIO
-                    img = Image.open(BytesIO(screenshot))
-                    img.save(qrcode_file)
-                    utils.logger.info("[check_login_state] 需要安全验证，已截图到前端展示。")
-                except Exception:
-                    utils.logger.info("[check_login_state] CAPTCHA/SMS verification detected, please verify manually.")
+        if "短信验证码" in page_content or "安全验证" in page_content:
+            await self._handle_sms_verification()
 
-        # 3. Compatibility fallback: Original Cookie-based change detection
+        # 3. Check for CAPTCHA prompt
+        if "请通过验证" in page_content:
+            utils.logger.info("[XiaoHongShuLogin.check_login_state] CAPTCHA appeared, please verify manually.")
+
+        # 4. Compatibility fallback: Original Cookie-based change detection
         current_cookie = await self.browser_context.cookies()
         _, cookie_dict = utils.convert_cookies(current_cookie)
         current_web_session = cookie_dict.get("web_session")
@@ -95,6 +89,48 @@ class XiaoHongShuLogin(AbstractLogin):
             return True
 
         return False
+
+    async def _handle_sms_verification(self) -> None:
+        """Handle SMS verification: screenshot to frontend, wait for user to submit code."""
+        qrcode_file = os.getenv("XHS_QRCODE_FILE")
+        sms_code_file = os.getenv("XHS_SMS_CODE_FILE")
+        if not qrcode_file or not sms_code_file:
+            return
+
+        # Take screenshot of verification page
+        try:
+            screenshot = await self.context_page.screenshot()
+            from PIL import Image
+            from io import BytesIO
+            img = Image.open(BytesIO(screenshot))
+            img.save(qrcode_file)
+            utils.logger.info("[check_login_state] 需要短信验证码，已截图展示。请在前端输入验证码。")
+        except Exception:
+            return
+
+        # Wait for SMS code file to appear (frontend writes it via API)
+        import asyncio
+        for _ in range(120):  # wait up to 120 seconds
+            if os.path.exists(sms_code_file):
+                code = open(sms_code_file).read().strip()
+                os.unlink(sms_code_file)
+                if code:
+                    utils.logger.info(f"[check_login_state] 收到验证码: {code}")
+                    # Enter the code into the input field
+                    try:
+                        input_el = await self.context_page.query_selector("input[placeholder*='验证码'], input[type='tel'], input[name*='code'], input[name*='captcha']")
+                        if input_el:
+                            await input_el.fill(code)
+                            await asyncio.sleep(0.5)
+                            # Click submit/confirm button
+                            btn = await self.context_page.query_selector("button[type='submit'], button:has-text('验证'), button:has-text('确定'), button:has-text('登录')")
+                            if btn:
+                                await btn.click()
+                                utils.logger.info("[check_login_state] 验证码已提交，等待验证结果...")
+                    except Exception as e:
+                        utils.logger.error(f"[check_login_state] 输入验证码失败: {e}")
+                    return
+            await asyncio.sleep(1)
 
     async def begin(self):
         """Start login xiaohongshu"""

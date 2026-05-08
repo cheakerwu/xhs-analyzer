@@ -91,6 +91,16 @@ async def qrcode_image(task_id: str) -> Response:
     )
 
 
+@app.post("/api/sms_code/{task_id}")
+async def submit_sms_code(task_id: str, body: dict) -> dict:
+    task = task_manager.get(task_id)
+    if not task or not task.sms_code_file:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    code = str(body.get("code", "")).strip()
+    task.sms_code_file.write_text(code)
+    return {"status": "ok"}
+
+
 @app.get("/api/history", response_model=list[HistoryItem])
 async def history_items() -> list[dict]:
     return list_history()

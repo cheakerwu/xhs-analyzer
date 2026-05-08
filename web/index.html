@@ -160,9 +160,14 @@
 
     <div id="qrcodeOverlay" class="qrcode-overlay hidden">
       <div class="qrcode-modal">
-        <h3>请扫码登录小红书</h3>
+        <h3 id="qrcodeTitle">请扫码登录小红书</h3>
         <img id="qrcodeImage" src="" alt="登录二维码" />
-        <p>使用小红书 App 扫描二维码，120秒内有效</p>
+        <p id="qrcodeHint">使用小红书 App 扫描二维码，120秒内有效</p>
+        <div id="smsCodeSection" class="hidden">
+          <p>小红书已发送短信验证码到你的手机</p>
+          <input id="smsCodeInput" type="text" placeholder="输入验证码" maxlength="6" />
+          <button id="smsCodeSubmit" class="primary-button" type="button">提交验证码</button>
+        </div>
       </div>
     </div>
 

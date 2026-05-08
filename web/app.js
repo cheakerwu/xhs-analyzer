@@ -10,6 +10,11 @@ const llmForm = document.querySelector("#llmForm");
 const llmStateText = document.querySelector("#llmStateText");
 const qrcodeOverlay = document.querySelector("#qrcodeOverlay");
 const qrcodeImage = document.querySelector("#qrcodeImage");
+const qrcodeTitle = document.querySelector("#qrcodeTitle");
+const qrcodeHint = document.querySelector("#qrcodeHint");
+const smsCodeSection = document.querySelector("#smsCodeSection");
+const smsCodeInput = document.querySelector("#smsCodeInput");
+const smsCodeSubmit = document.querySelector("#smsCodeSubmit");
 
 const metricNames = {
   avg_engagement: "平均互动",
@@ -282,10 +287,16 @@ async function pollTask(taskId) {
       if (loginSuccess) {
         hideQrcode();
       } else {
+        const needsSms = logs.some(
+          (l) => l.includes("需要短信验证码") || l.includes("安全验证")
+        );
         const needsQrcode = logs.some(
           (l) => l.includes("扫码") || l.includes("qrcode") || l.includes("waiting for scan")
         );
-        if (needsQrcode && task.status === "running") {
+        if (needsSms && task.status === "running") {
+          tryFetchQrcode(taskId);
+          showSmsInput(taskId);
+        } else if (needsQrcode && task.status === "running") {
           tryFetchQrcode(taskId);
         } else {
           hideQrcode();
@@ -331,10 +342,36 @@ async function tryFetchQrcode(taskId) {
 
 function hideQrcode() {
   qrcodeOverlay.classList.add("hidden");
+  smsCodeSection.classList.add("hidden");
   if (qrcodeImage.src) {
     URL.revokeObjectURL(qrcodeImage.src);
     qrcodeImage.src = "";
   }
+}
+
+function showSmsInput(taskId) {
+  qrcodeTitle.textContent = "需要安全验证";
+  qrcodeHint.textContent = "";
+  smsCodeSection.classList.remove("hidden");
+  smsCodeInput.focus();
+  smsCodeSubmit.onclick = async () => {
+    const code = smsCodeInput.value.trim();
+    if (!code) return;
+    smsCodeSubmit.disabled = true;
+    smsCodeSubmit.textContent = "提交中...";
+    try {
+      await fetch(`/api/sms_code/${taskId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      smsCodeSection.classList.add("hidden");
+      qrcodeTitle.textContent = "验证码已提交，等待验证...";
+    } catch {
+      smsCodeSubmit.disabled = false;
+      smsCodeSubmit.textContent = "重新提交";
+    }
+  };
 }
 
 async function loadHistory() {
