@@ -147,6 +147,9 @@ class TaskManager:
         task.progress = start_progress
         task.add_log(f"开始采集{label}：{homepage}")
 
+        # Clean up stale Chromium lock files from previous crashes
+        _cleanup_browser_locks()
+
         command = build_crawler_command(
             homepage=homepage,
             output_dir=role_dir,
@@ -187,6 +190,17 @@ class TaskManager:
         task.progress = end_progress
         task.add_log(f"{label}采集完成。")
         return role_dir
+
+
+def _cleanup_browser_locks() -> None:
+    """Remove stale Chromium SingletonLock files left by crashed processes."""
+    lock_dir = MEDIA_CRAWLER_ROOT / "browser_data" / "xhs_user_data_dir"
+    for name in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
+        lock_file = lock_dir / name
+        try:
+            lock_file.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def compact_log(line: str) -> str:
