@@ -74,6 +74,14 @@ async def task_status(task_id: str) -> TaskStatus:
     )
 
 
+@app.get("/api/qrcode/{task_id}")
+async def qrcode_image(task_id: str) -> FileResponse:
+    task = task_manager.get(task_id)
+    if not task or not task.qrcode_file or not task.qrcode_file.exists():
+        raise HTTPException(status_code=404, detail="暂无二维码")
+    return FileResponse(task.qrcode_file, media_type="image/png")
+
+
 @app.get("/api/history", response_model=list[HistoryItem])
 async def history_items() -> list[dict]:
     return list_history()

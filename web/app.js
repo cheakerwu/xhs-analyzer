@@ -8,6 +8,8 @@ const results = document.querySelector("#results");
 const historyList = document.querySelector("#historyList");
 const llmForm = document.querySelector("#llmForm");
 const llmStateText = document.querySelector("#llmStateText");
+const qrcodeOverlay = document.querySelector("#qrcodeOverlay");
+const qrcodeImage = document.querySelector("#qrcodeImage");
 
 const metricNames = {
   avg_engagement: "平均互动",
@@ -252,30 +254,78 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+let currentPollId = 0;
+
 async function pollTask(taskId) {
-  while (true) {
-    const response = await fetch(`/api/tasks/${taskId}`);
-    const task = await response.json();
-    stageText.textContent = task.stage;
-    progressBar.style.width = `${task.progress}%`;
-    renderLogs(task.logs || []);
+  const pollId = ++currentPollId;
+  while (pollId === currentPollId) {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`);
+      if (!response.ok) {
+        stageText.textContent = "任务查询失败";
+        renderLogs(["任务不存在或已过期，请重新提交。"]);
+        submitButton.disabled = false;
+        submitButton.textContent = "重新分析";
+        hideQrcode();
+        return;
+      }
+      const task = await response.json();
+      stageText.textContent = task.stage;
+      progressBar.style.width = `${task.progress}%`;
+      renderLogs(task.logs || []);
 
-    if (task.status === "completed") {
-      submitButton.disabled = false;
-      submitButton.textContent = "重新分析";
-      renderResults(task.result);
-      return;
-    }
+      // Check if QR code login is needed
+      const needsQrcode = (task.logs || []).some(
+        (l) => l.includes("扫码") || l.includes("qrcode") || l.includes("waiting for scan")
+      );
+      if (needsQrcode && task.status === "running") {
+        tryFetchQrcode(taskId);
+      } else {
+        hideQrcode();
+      }
 
-    if (task.status === "failed") {
-      submitButton.disabled = false;
-      submitButton.textContent = "重新分析";
-      stageText.textContent = "失败";
-      renderLogs([...(task.logs || []), task.error || "任务失败"]);
-      return;
+      if (task.status === "completed") {
+        submitButton.disabled = false;
+        submitButton.textContent = "重新分析";
+        hideQrcode();
+        renderResults(task.result);
+        return;
+      }
+
+      if (task.status === "failed") {
+        submitButton.disabled = false;
+        submitButton.textContent = "重新分析";
+        stageText.textContent = "失败";
+        hideQrcode();
+        renderLogs([...(task.logs || []), task.error || "任务失败"]);
+        return;
+      }
+    } catch {
+      // network hiccup — keep polling
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+}
+
+async function tryFetchQrcode(taskId) {
+  try {
+    const resp = await fetch(`/api/qrcode/${taskId}`);
+    if (resp.ok) {
+      const blob = await resp.blob();
+      qrcodeImage.src = URL.createObjectURL(blob);
+      qrcodeOverlay.classList.remove("hidden");
+    }
+  } catch {
+    // not ready yet
+  }
+}
+
+function hideQrcode() {
+  qrcodeOverlay.classList.add("hidden");
+  if (qrcodeImage.src) {
+    URL.revokeObjectURL(qrcodeImage.src);
+    qrcodeImage.src = "";
   }
 }
 
@@ -312,6 +362,8 @@ document.querySelector("#refreshHistory").addEventListener("click", loadHistory)
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  currentPollId++; // cancel any running poll loop
+  hideQrcode();
   results.classList.add("hidden");
   submitButton.disabled = true;
   submitButton.textContent = "分析中";

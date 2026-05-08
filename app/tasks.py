@@ -44,6 +44,7 @@ class AnalysisTask:
     result: dict[str, Any] | None = None
     error: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
+    qrcode_file: Path | None = None
 
     def add_log(self, message: str) -> None:
         stamp = datetime.now().strftime("%H:%M:%S")
@@ -119,6 +120,8 @@ class TaskManager:
                 task.stage = "失败"
                 task.error = str(exc)
                 task.add_log(f"任务失败：{exc}")
+            finally:
+                _cleanup_qrcode(task)
 
     async def _collect_profile(
         self,
@@ -159,10 +162,15 @@ class TaskManager:
             headless=task.request.headless,
         )
 
+        # QR code file for remote login
+        qrcode_path = RUN_DATA_ROOT / f"{task.task_id}_qrcode.png"
+        task.qrcode_file = qrcode_path
+
         env = {
             **os.environ,
             "PYTHONUNBUFFERED": "1",
             "PYTHONIOENCODING": "utf-8",
+            "XHS_QRCODE_FILE": str(qrcode_path),
         }
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -199,6 +207,15 @@ def _cleanup_browser_locks() -> None:
         lock_file = lock_dir / name
         try:
             lock_file.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _cleanup_qrcode(task: AnalysisTask) -> None:
+    """Remove temporary QR code file after task completes."""
+    if task.qrcode_file and task.qrcode_file.exists():
+        try:
+            task.qrcode_file.unlink()
         except OSError:
             pass
 

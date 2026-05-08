@@ -652,3 +652,47 @@ input:focus {
     width: fit-content;
   }
 }
+
+/* QR Code Overlay */
+.qrcode-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.qrcode-overlay.hidden {
+  display: none;
+}
+
+.qrcode-modal {
+  background: var(--panel, #fff);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 340px;
+}
+
+.qrcode-modal h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  color: var(--text, #1d2520);
+}
+
+.qrcode-modal img {
+  width: 240px;
+  height: 240px;
+  object-fit: contain;
+  border: 1px solid var(--line, #dce5dd);
+  border-radius: 8px;
+}
+
+.qrcode-modal p {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted, #66736b);
+}
