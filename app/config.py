@@ -11,8 +11,18 @@ WEB_ROOT = PROJECT_ROOT / "web"
 RUN_DATA_ROOT = PROJECT_ROOT / "data" / "runs"
 HISTORY_ROOT = PROJECT_ROOT / "data" / "history"
 
-DEFAULT_PYTHON = sys.executable
-PYTHON_EXECUTABLE = Path(os.getenv("XHS_ANALYZER_PYTHON", DEFAULT_PYTHON))
+def _resolve_python() -> Path:
+    """Resolve the Python executable, falling back to sys.executable if the configured path is missing."""
+    configured = os.getenv("XHS_ANALYZER_PYTHON")
+    if configured:
+        p = Path(configured)
+        if p.exists():
+            return p
+    # sys.executable is always correct when the app is running under Python
+    return Path(sys.executable)
+
+
+PYTHON_EXECUTABLE = _resolve_python()
 
 DEFAULT_MAX_NOTES = int(os.getenv("XHS_ANALYZER_MAX_NOTES", "30"))
 DEFAULT_MAX_COMMENTS = int(os.getenv("XHS_ANALYZER_MAX_COMMENTS", "20"))
