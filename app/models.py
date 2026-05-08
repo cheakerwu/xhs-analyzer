@@ -12,7 +12,7 @@ class AnalyzeRequest(BaseModel):
     max_comments_per_note: int = Field(default=20, ge=0, le=200)
     include_comments: bool = True
     enable_ai_analysis: bool = True
-    headless: bool = False
+    headless: bool = True
     reuse_existing_data: bool = True
 
 

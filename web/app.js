@@ -326,7 +326,7 @@ form.addEventListener("submit", async (event) => {
     max_comments_per_note: Number(document.querySelector("#maxComments").value || 20),
     include_comments: document.querySelector("#includeComments").checked,
     enable_ai_analysis: document.querySelector("#enableAi").checked,
-    headless: document.querySelector("#headless").checked,
+    headless: true,
     reuse_existing_data: document.querySelector("#reuseData").checked,
   };
 
