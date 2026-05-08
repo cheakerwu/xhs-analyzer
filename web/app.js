@@ -318,7 +318,7 @@ async function pollTask(taskId) {
 
 async function tryFetchQrcode(taskId) {
   try {
-    const resp = await fetch(`/api/qrcode/${taskId}`, { method: "POST" });
+    const resp = await fetch(`/api/qrcode/${taskId}?t=${Date.now()}`);
     if (resp.ok) {
       const blob = await resp.blob();
       qrcodeImage.src = URL.createObjectURL(blob);

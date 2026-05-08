@@ -74,7 +74,7 @@ async def task_status(task_id: str) -> TaskStatus:
     )
 
 
-@app.post("/api/qrcode/{task_id}")
+@app.get("/api/qrcode/{task_id}")
 async def qrcode_image(task_id: str) -> Response:
     task = task_manager.get(task_id)
     if not task or not task.qrcode_file or not task.qrcode_file.exists():
