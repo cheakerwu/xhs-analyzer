@@ -88,26 +88,30 @@ async def find_qrcode_img_from_canvas(page: Page, canvas_selector: str) -> str:
 
 def show_qrcode(qr_code) -> None:  # type: ignore
     """parse base64 encode qrcode image and show it"""
-    if "," in qr_code:
-        qr_code = qr_code.split(",")[1]
-    qr_code = base64.b64decode(qr_code)
-    image = Image.open(BytesIO(qr_code))
+    try:
+        if "," in qr_code:
+            qr_code = qr_code.split(",")[1]
+        qr_code = base64.b64decode(qr_code)
+        image = Image.open(BytesIO(qr_code))
 
-    # Add a square border around the QR code and display it within the border to improve scanning accuracy.
-    width, height = image.size
-    new_image = Image.new('RGB', (width + 20, height + 20), color=(255, 255, 255))
-    new_image.paste(image, (10, 10))
-    draw = ImageDraw.Draw(new_image)
-    draw.rectangle((0, 0, width + 19, height + 19), outline=(0, 0, 0), width=1)
+        # Add a square border around the QR code and display it within the border to improve scanning accuracy.
+        width, height = image.size
+        new_image = Image.new('RGB', (width + 20, height + 20), color=(255, 255, 255))
+        new_image.paste(image, (10, 10))
+        draw = ImageDraw.Draw(new_image)
+        draw.rectangle((0, 0, width + 19, height + 19), outline=(0, 0, 0), width=1)
 
-    # Remote mode: save QR code to file for web frontend to serve
-    qrcode_file = os.getenv("XHS_QRCODE_FILE")
-    if qrcode_file:
-        new_image.save(qrcode_file)
-        return
+        # Remote mode: save QR code to file for web frontend to serve
+        qrcode_file = os.getenv("XHS_QRCODE_FILE")
+        if qrcode_file:
+            new_image.save(qrcode_file)
+            utils.logger.info(f"[show_qrcode] QR code saved to {qrcode_file}")
+            return
 
-    del ImageShow.UnixViewer.options["save_all"]
-    new_image.show()
+        del ImageShow.UnixViewer.options["save_all"]
+        new_image.show()
+    except Exception as e:
+        utils.logger.error(f"[show_qrcode] Failed to save/show QR code: {e}")
 
 
 def get_user_agent() -> str:
