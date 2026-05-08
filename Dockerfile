@@ -21,10 +21,10 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
     && rm /tmp/mediacrawler-requirements.txt /tmp/requirements-app.txt
 
 # Create non-root user before copying app code
-RUN groupadd -g 1001 appgroup \
-    && useradd -u 1001 -g appgroup -m -s /bin/bash appuser \
+RUN getent group 1001 > /dev/null || groupadd -g 1001 appgroup \
+    && id -u appuser > /dev/null 2>&1 || useradd -u 1001 -g 1001 -m -s /bin/bash appuser \
     && mkdir -p /app/data/runs /app/data/history \
-    && chown -R appuser:appgroup /app
+    && chown -R 1001:1001 /app
 
 # Copy application code
 COPY --chown=appuser:appgroup app ./app
