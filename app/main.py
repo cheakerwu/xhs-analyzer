@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -75,11 +75,20 @@ async def task_status(task_id: str) -> TaskStatus:
 
 
 @app.get("/api/qrcode/{task_id}")
-async def qrcode_image(task_id: str) -> FileResponse:
+async def qrcode_image(task_id: str) -> Response:
     task = task_manager.get(task_id)
     if not task or not task.qrcode_file or not task.qrcode_file.exists():
-        raise HTTPException(status_code=404, detail="暂无二维码")
-    return FileResponse(task.qrcode_file, media_type="image/png")
+        return Response(
+            content='{"detail":"暂无二维码"}',
+            media_type="application/json",
+            status_code=404,
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+        )
+    return FileResponse(
+        task.qrcode_file,
+        media_type="image/png",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+    )
 
 
 @app.get("/api/history", response_model=list[HistoryItem])
