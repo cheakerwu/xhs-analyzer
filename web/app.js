@@ -277,7 +277,7 @@ async function pollTask(taskId) {
       // Check if QR code login is needed
       const logs = task.logs || [];
       const loginSuccess = logs.some(
-        (l) => l.includes("Login successful") || l.includes("登录成功") || l.includes("Login state result: True")
+        (l) => l.includes("扫码登录成功") || l.includes("Login successful") || l.includes("Login state result: True")
       );
       if (loginSuccess) {
         hideQrcode();
