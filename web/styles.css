@@ -194,6 +194,23 @@ input:focus {
   font-weight: 750;
 }
 
+.primary-link-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  padding: 0 16px;
+  text-decoration: none;
+  font-weight: 750;
+}
+
+.primary-link-button:hover {
+  background: var(--green-dark);
+}
+
 .ghost-button {
   min-height: 34px;
   border: 1px solid var(--line);

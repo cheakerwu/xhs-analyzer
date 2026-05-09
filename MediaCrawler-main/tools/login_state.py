@@ -16,6 +16,7 @@ def write_state(
     message: str,
     sms_attempts: int = 0,
     max_sms_attempts: int = 3,
+    **extra,
 ) -> None:
     """Atomically write login state to a JSON file."""
     data = {
@@ -25,6 +26,7 @@ def write_state(
         "max_sms_attempts": max_sms_attempts,
         "updated_at": time.time(),
     }
+    data.update({key: value for key, value in extra.items() if value is not None})
     tmp = state_file + ".tmp"
     try:
         with open(tmp, "w", encoding="utf-8") as f:

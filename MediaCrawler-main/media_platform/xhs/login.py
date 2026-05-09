@@ -57,10 +57,14 @@ class XiaoHongShuLogin(AbstractLogin):
         self._state_file = os.getenv("XHS_LOGIN_STATE_FILE", "")
         self._screenshot_file = os.getenv("XHS_SCREENSHOT_FILE", "")
         self._sms_code_file = os.getenv("XHS_SMS_CODE_FILE", "")
+        self._remote_browser_url = os.getenv("XHS_REMOTE_BROWSER_URL", "")
         self._use_remote_login = bool(self._state_file)
 
     def _write_state(self, state: str, message: str, **kwargs) -> None:
         if self._state_file:
+            if state in {"sms_needed", "captcha", "manual_required", "waiting_for_scan"}:
+                kwargs.setdefault("remote_browser_url", self._remote_browser_url)
+                kwargs.setdefault("remote_browser_hint", "可打开远程浏览器完成小红书页面上的验证操作。")
             write_state(self._state_file, state, message, **kwargs)
 
     async def _take_screenshot(self, element_selector: str | None = None) -> None:
@@ -131,7 +135,33 @@ class XiaoHongShuLogin(AbstractLogin):
             )
             utils.logger.info(f"[SMS] Waiting for verification code (attempt {attempt + 1}/{max_attempts})...")
 
-            code = await wait_for_sms_code(self._sms_code_file, timeout=120)
+            code = None
+            initial_mtime = os.path.getmtime(self._sms_code_file) if os.path.exists(self._sms_code_file) else 0.0
+            for _ in range(120):
+                if await self._is_logged_in():
+                    self._write_state("logged_in", "登录成功！")
+                    utils.logger.info("[SMS] Login successful via remote browser.")
+                    return True
+
+                current_cookie = await self.browser_context.cookies()
+                _, cookie_dict = utils.convert_cookies(current_cookie)
+                current_web_session = cookie_dict.get("web_session")
+                if current_web_session and current_web_session != no_logged_in_session:
+                    self._write_state("logged_in", "登录成功！")
+                    utils.logger.info("[SMS] Login confirmed by cookie change during remote verification.")
+                    return True
+
+                if os.path.exists(self._sms_code_file):
+                    current_mtime = os.path.getmtime(self._sms_code_file)
+                    if current_mtime != initial_mtime:
+                        try:
+                            code = open(self._sms_code_file, encoding="utf-8").read().strip()
+                        except Exception:
+                            code = None
+                        if code:
+                            break
+                await asyncio.sleep(1)
+
             if not code:
                 self._write_state("login_failed", "验证码等待超时")
                 utils.logger.info("[SMS] Timed out waiting for verification code.")

@@ -17,6 +17,7 @@ from app.config import (
     DEFAULT_SLEEP_SECONDS,
     MEDIA_CRAWLER_ROOT,
     PYTHON_EXECUTABLE,
+    REMOTE_BROWSER_URL,
     RUN_DATA_ROOT,
 )
 from app.data_loader import load_profile_run, latest_jsonl
@@ -195,6 +196,7 @@ class TaskManager:
             "XHS_SMS_CODE_FILE": str(sms_code_path),
             "XHS_SCREENSHOT_FILE": str(screenshot_path),
             "XHS_LOGIN_STATE_FILE": str(login_state_path),
+            "XHS_REMOTE_BROWSER_URL": REMOTE_BROWSER_URL,
         }
         process = await asyncio.create_subprocess_exec(
             *command,

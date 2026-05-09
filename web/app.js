@@ -21,6 +21,9 @@ const loginSmsInput = document.querySelector("#loginSmsInput");
 const loginSmsSubmit = document.querySelector("#loginSmsSubmit");
 const loginSmsError = document.querySelector("#loginSmsError");
 const loginSmsAttempts = document.querySelector("#loginSmsAttempts");
+const loginRemoteArea = document.querySelector("#loginRemoteArea");
+const loginRemoteHint = document.querySelector("#loginRemoteHint");
+const loginRemoteLink = document.querySelector("#loginRemoteLink");
 const loginFailedArea = document.querySelector("#loginFailedArea");
 const loginFailedMsg = document.querySelector("#loginFailedMsg");
 const loginCancel = document.querySelector("#loginCancel");
@@ -138,9 +141,10 @@ function escapeHtml(value) {
 // --- Login State Machine ---
 
 function startLoginPolling(taskId) {
-  currentTaskId = taskId;
   stopLoginPolling();
+  currentTaskId = taskId;
   loginPollTimer = setInterval(() => pollLoginState(taskId), 3000);
+  pollLoginState(taskId);
 }
 
 function stopLoginPolling() {
@@ -171,6 +175,7 @@ function handleLoginState(taskId, data) {
       loginQrcodeArea.classList.remove("hidden");
       loginHint.textContent = data.message || "使用小红书 App 扫描二维码";
       loginSmsArea.classList.add("hidden");
+      showRemoteBrowser(data, "如果扫码后出现安全验证，请打开远程浏览器完成。");
       loginFailedArea.classList.add("hidden");
       break;
 
@@ -181,6 +186,7 @@ function handleLoginState(taskId, data) {
       loginQrcodeArea.classList.add("hidden");
       loginSmsArea.classList.remove("hidden");
       loginSmsHint.textContent = data.message || "请输入短信验证码";
+      showRemoteBrowser(data, "也可以直接打开远程浏览器，在小红书页面里完成短信验证。");
       loginFailedArea.classList.add("hidden");
 
       loginSmsAttempts.textContent = `剩余尝试次数：${(data.max_sms_attempts || 3) - (data.sms_attempts || 0)}`;
@@ -195,12 +201,14 @@ function handleLoginState(taskId, data) {
       break;
 
     case "captcha":
+    case "manual_required":
       showLoginOverlay();
-      loginTitle.textContent = "需要验证";
+      loginTitle.textContent = "需要手动验证";
       loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
       loginQrcodeArea.classList.remove("hidden");
-      loginHint.textContent = data.message || "遇到验证码，请在浏览器中手动完成";
+      loginHint.textContent = data.message || "遇到安全验证，请打开远程浏览器手动完成";
       loginSmsArea.classList.add("hidden");
+      showRemoteBrowser(data, "请在远程浏览器中完成验证，完成后系统会继续检测登录状态。");
       loginFailedArea.classList.add("hidden");
       break;
 
@@ -233,12 +241,20 @@ function hideLoginOverlay() {
   loginOverlay.classList.add("hidden");
   loginQrcodeArea.classList.add("hidden");
   loginSmsArea.classList.add("hidden");
+  loginRemoteArea.classList.add("hidden");
   loginFailedArea.classList.add("hidden");
   if (loginScreenshot.src) {
     loginScreenshot.src = "";
   }
   loginSmsInput.value = "";
   loginSmsError.classList.add("hidden");
+}
+
+function showRemoteBrowser(data, fallbackText) {
+  const url = data.remote_browser_url || `${window.location.protocol}//${window.location.hostname}:6080/`;
+  loginRemoteLink.href = url;
+  loginRemoteHint.textContent = data.remote_browser_hint || fallbackText;
+  loginRemoteArea.classList.remove("hidden");
 }
 
 // SMS code submission
@@ -543,7 +559,7 @@ form.addEventListener("submit", async (event) => {
     max_comments_per_note: Number(document.querySelector("#maxComments").value || 20),
     include_comments: document.querySelector("#includeComments").checked,
     enable_ai_analysis: document.querySelector("#enableAi").checked,
-    headless: true,
+    headless: false,
     reuse_existing_data: document.querySelector("#reuseData").checked,
   };
 

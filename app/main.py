@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DEFAULT_MAX_COMMENTS, DEFAULT_MAX_NOTES, WEB_ROOT
+from app.config import DEFAULT_MAX_COMMENTS, DEFAULT_MAX_NOTES, REMOTE_BROWSER_URL, WEB_ROOT
 from app.history import get_history, list_history
 from app.llm_analysis import llm_enabled
 from app.models import AnalyzeRequest, HistoryItem, TaskCreated, TaskStatus
@@ -97,7 +99,9 @@ async def submit_sms_code(task_id: str, body: dict) -> dict:
     if not task or not task.sms_code_file:
         raise HTTPException(status_code=404, detail="任务不存在")
     code = str(body.get("code", "")).strip()
-    task.sms_code_file.write_text(code)
+    if not re.fullmatch(r"\d{4,8}", code):
+        raise HTTPException(status_code=400, detail="验证码格式不正确")
+    task.sms_code_file.write_text(code, encoding="utf-8")
     return {"status": "ok"}
 
 
@@ -114,7 +118,12 @@ async def login_state(task_id: str) -> dict:
         text = task.login_state_file.read_text(encoding="utf-8").strip()
         if not text:
             return {"state": "unknown", "message": "等待登录状态..."}
-        return _json.loads(text)
+        data = _json.loads(text)
+        if data.get("state") in {"waiting_for_scan", "sms_needed", "captcha", "manual_required"}:
+            if REMOTE_BROWSER_URL:
+                data.setdefault("remote_browser_url", REMOTE_BROWSER_URL)
+            data.setdefault("remote_browser_hint", "如遇到短信、滑块或安全验证，请打开远程浏览器手动完成。")
+        return data
     except Exception:
         return {"state": "unknown", "message": "读取状态失败"}
 

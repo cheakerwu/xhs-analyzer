@@ -27,6 +27,7 @@ PYTHON_EXECUTABLE = _resolve_python()
 DEFAULT_MAX_NOTES = int(os.getenv("XHS_ANALYZER_MAX_NOTES", "30"))
 DEFAULT_MAX_COMMENTS = int(os.getenv("XHS_ANALYZER_MAX_COMMENTS", "20"))
 DEFAULT_SLEEP_SECONDS = float(os.getenv("XHS_ANALYZER_SLEEP_SECONDS", "1"))
+REMOTE_BROWSER_URL = os.getenv("XHS_REMOTE_BROWSER_URL", "")
 
 LLM_API_KEY = os.getenv("XHS_LLM_API_KEY", "")
 LLM_BASE_URL = os.getenv("XHS_LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
