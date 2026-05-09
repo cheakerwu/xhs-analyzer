@@ -63,12 +63,10 @@ class XiaoHongShuLogin(AbstractLogin):
         if self._state_file:
             write_state(self._state_file, state, message, **kwargs)
 
-    async def _take_screenshot(self) -> None:
+    async def _take_screenshot(self, element_selector: str | None = None) -> None:
         if self._screenshot_file:
-            utils.logger.info(f"[login] Taking screenshot, file={self._screenshot_file}")
-            await take_screenshot(self._screenshot_file, self.context_page)
-        else:
-            utils.logger.warning("[login] _take_screenshot skipped: no screenshot_file set")
+            await take_screenshot(self._screenshot_file, self.context_page, element_selector)
+
 
     async def _is_logged_in(self) -> bool:
         """Check if already logged in via UI element or cookie change."""
@@ -187,7 +185,11 @@ class XiaoHongShuLogin(AbstractLogin):
         """
         # Take periodic screenshot for remote viewing
         if self._use_remote_login:
-            await self._take_screenshot()
+            # Screenshot only the QR code element (sharp PNG) during scan phase
+            if await self._is_showing_qrcode():
+                await self._take_screenshot("xpath=//img[@class='qrcode-img']")
+            else:
+                await self._take_screenshot()
 
         # 1. Check UI element
         try:

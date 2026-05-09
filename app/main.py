@@ -129,9 +129,13 @@ async def screenshot_image(task_id: str) -> Response:
             status_code=404,
             headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
         )
+    # Detect format from file header
+    with open(task.screenshot_file, "rb") as f:
+        header = f.read(4)
+    media_type = "image/png" if header[:4] == b"\x89PNG" else "image/jpeg"
     return FileResponse(
         task.screenshot_file,
-        media_type="image/jpeg",
+        media_type=media_type,
         headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
     )
 

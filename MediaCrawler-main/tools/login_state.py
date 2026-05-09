@@ -34,17 +34,21 @@ def write_state(
         utils.logger.error(f"[login_state] Failed to write state: {e}")
 
 
-async def take_screenshot(screenshot_file: str, page) -> None:
-    """Take a screenshot of the current page (JPEG, smaller size)."""
-    utils.logger.info(f"[login_state] Taking screenshot, target={screenshot_file}")
+async def take_screenshot(screenshot_file: str, page, element_selector: str | None = None) -> None:
+    """Take a screenshot. If element_selector is given, screenshot only that element (PNG)."""
     tmp = screenshot_file + ".bak"
     try:
-        screenshot_bytes = await page.screenshot(full_page=False, type="jpeg", quality=85)
-        utils.logger.info(f"[login_state] Screenshot captured, size={len(screenshot_bytes)} bytes")
+        if element_selector:
+            el = await page.query_selector(element_selector)
+            if el:
+                screenshot_bytes = await el.screenshot()
+            else:
+                screenshot_bytes = await page.screenshot(full_page=False, type="jpeg", quality=85)
+        else:
+            screenshot_bytes = await page.screenshot(full_page=False, type="jpeg", quality=85)
         with open(tmp, "wb") as f:
             f.write(screenshot_bytes)
         os.replace(tmp, screenshot_file)
-        utils.logger.info(f"[login_state] Screenshot saved to {screenshot_file}")
     except Exception as e:
         utils.logger.error(f"[login_state] Screenshot failed: {type(e).__name__}: {e}")
     finally:
