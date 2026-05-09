@@ -182,10 +182,6 @@ class XiaoHongShuLogin(AbstractLogin):
         Verify login status using dual-check: UI elements and Cookies.
         With remote login support via structured state files.
         """
-        # Take periodic screenshot for remote viewing
-        if self._use_remote_login:
-            await self._take_screenshot()
-
         # 1. Check UI element
         try:
             user_profile_selector = "xpath=//a[contains(@href, '/user/profile/')]//span[text()='我']"
@@ -216,7 +212,7 @@ class XiaoHongShuLogin(AbstractLogin):
                 self._write_state("captcha", "遇到验证码，请在浏览器中手动完成验证")
             utils.logger.info("[check_login_state] CAPTCHA detected.")
 
-        # 4. Update state for waiting-for-scan
+        # 4. Update state for waiting-for-scan (no screenshot needed — QR code is served separately)
         if self._use_remote_login and await self._is_showing_qrcode():
             self._write_state("waiting_for_scan", "请使用小红书 App 扫描二维码")
 

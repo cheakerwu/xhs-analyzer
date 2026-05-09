@@ -21,6 +21,8 @@ const loginSmsInput = document.querySelector("#loginSmsInput");
 const loginSmsSubmit = document.querySelector("#loginSmsSubmit");
 const loginSmsError = document.querySelector("#loginSmsError");
 const loginSmsAttempts = document.querySelector("#loginSmsAttempts");
+const loginQrcodeImg = document.querySelector("#loginQrcodeImg");
+const loginScreenshotWrap = document.querySelector("#loginScreenshotWrap");
 const loginFailedArea = document.querySelector("#loginFailedArea");
 const loginFailedMsg = document.querySelector("#loginFailedMsg");
 const loginCancel = document.querySelector("#loginCancel");
@@ -167,8 +169,10 @@ function handleLoginState(taskId, data) {
     case "waiting_for_scan":
       showLoginOverlay();
       loginTitle.textContent = "请扫码登录";
-      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+      // Show QR code only (clear, fast loading)
+      loginQrcodeImg.src = `/api/qrcode/${taskId}?t=${Date.now()}`;
       loginQrcodeArea.classList.remove("hidden");
+      loginScreenshotWrap.classList.add("hidden");
       loginHint.textContent = data.message || "使用小红书 App 扫描二维码";
       loginSmsArea.classList.add("hidden");
       loginFailedArea.classList.add("hidden");
@@ -177,7 +181,9 @@ function handleLoginState(taskId, data) {
     case "sms_needed":
       showLoginOverlay();
       loginTitle.textContent = "需要安全验证";
+      // Show full browser screenshot for SMS verification context
       loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+      loginScreenshotWrap.classList.remove("hidden");
       loginQrcodeArea.classList.add("hidden");
       loginSmsArea.classList.remove("hidden");
       loginSmsHint.textContent = data.message || "请输入短信验证码";
@@ -197,8 +203,10 @@ function handleLoginState(taskId, data) {
     case "captcha":
       showLoginOverlay();
       loginTitle.textContent = "需要验证";
+      // Show screenshot so user can see the captcha
       loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
-      loginQrcodeArea.classList.remove("hidden");
+      loginScreenshotWrap.classList.remove("hidden");
+      loginQrcodeArea.classList.add("hidden");
       loginHint.textContent = data.message || "遇到验证码，请在浏览器中手动完成";
       loginSmsArea.classList.add("hidden");
       loginFailedArea.classList.add("hidden");
@@ -232,12 +240,11 @@ function showLoginOverlay() {
 function hideLoginOverlay() {
   loginOverlay.classList.add("hidden");
   loginQrcodeArea.classList.add("hidden");
+  loginScreenshotWrap.classList.add("hidden");
   loginSmsArea.classList.add("hidden");
   loginFailedArea.classList.add("hidden");
-  if (loginScreenshot.src) {
-    URL.revokeObjectURL(loginScreenshot.src);
-    loginScreenshot.src = "";
-  }
+  if (loginQrcodeImg.src) loginQrcodeImg.src = "";
+  if (loginScreenshot.src) loginScreenshot.src = "";
   loginSmsInput.value = "";
   loginSmsError.classList.add("hidden");
 }
