@@ -36,11 +36,20 @@ def write_state(
 
 async def take_screenshot(screenshot_file: str, page) -> None:
     """Take a screenshot of the current page."""
+    tmp = screenshot_file + ".bak"
     try:
-        await page.screenshot(path=screenshot_file + ".tmp", full_page=False)
-        os.replace(screenshot_file + ".tmp", screenshot_file)
+        screenshot_bytes = await page.screenshot(full_page=False)
+        with open(tmp, "wb") as f:
+            f.write(screenshot_bytes)
+        os.replace(tmp, screenshot_file)
     except Exception as e:
         utils.logger.error(f"[login_state] Screenshot failed: {e}")
+    finally:
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except OSError:
+            pass
 
 
 async def wait_for_sms_code(sms_code_file: str, timeout: int = 120) -> str | None:
