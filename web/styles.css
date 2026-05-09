@@ -677,23 +677,6 @@ input:focus {
   width: min(95vw, 960px);
 }
 
-.login-qrcode-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-}
-
-.login-qrcode-wrap img {
-  max-width: 320px;
-  width: 100%;
-  border: 1px solid var(--line, #dce5dd);
-  border-radius: 8px;
-}
-
-.login-qrcode-wrap img[src=""] {
-  display: none;
-}
-
 .login-header {
   display: flex;
   align-items: center;
@@ -713,7 +696,8 @@ input:focus {
   border-radius: 8px;
   overflow: hidden;
   background: #f5f5f5;
-  min-height: 200px;
+  min-height: 300px;
+  max-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -721,15 +705,12 @@ input:focus {
 
 .login-screenshot-wrap img {
   width: 100%;
+  max-height: 70vh;
   display: block;
   object-fit: contain;
 }
 
 .login-screenshot-wrap img[src=""] {
-  display: none;
-}
-
-.login-screenshot-wrap.hidden {
   display: none;
 }
 

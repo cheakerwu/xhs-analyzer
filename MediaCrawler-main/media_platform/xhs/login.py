@@ -182,6 +182,10 @@ class XiaoHongShuLogin(AbstractLogin):
         Verify login status using dual-check: UI elements and Cookies.
         With remote login support via structured state files.
         """
+        # Take periodic screenshot for remote viewing
+        if self._use_remote_login:
+            await self._take_screenshot()
+
         # 1. Check UI element
         try:
             user_profile_selector = "xpath=//a[contains(@href, '/user/profile/')]//span[text()='我']"
