@@ -36,14 +36,17 @@ def write_state(
 
 async def take_screenshot(screenshot_file: str, page) -> None:
     """Take a screenshot of the current page (JPEG, smaller size)."""
+    utils.logger.info(f"[login_state] Taking screenshot, target={screenshot_file}")
     tmp = screenshot_file + ".bak"
     try:
         screenshot_bytes = await page.screenshot(full_page=False, type="jpeg", quality=85)
+        utils.logger.info(f"[login_state] Screenshot captured, size={len(screenshot_bytes)} bytes")
         with open(tmp, "wb") as f:
             f.write(screenshot_bytes)
         os.replace(tmp, screenshot_file)
+        utils.logger.info(f"[login_state] Screenshot saved to {screenshot_file}")
     except Exception as e:
-        utils.logger.error(f"[login_state] Screenshot failed: {e}")
+        utils.logger.error(f"[login_state] Screenshot failed: {type(e).__name__}: {e}")
     finally:
         try:
             if os.path.exists(tmp):

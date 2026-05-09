@@ -65,7 +65,10 @@ class XiaoHongShuLogin(AbstractLogin):
 
     async def _take_screenshot(self) -> None:
         if self._screenshot_file:
+            utils.logger.info(f"[login] Taking screenshot, file={self._screenshot_file}")
             await take_screenshot(self._screenshot_file, self.context_page)
+        else:
+            utils.logger.warning("[login] _take_screenshot skipped: no screenshot_file set")
 
     async def _is_logged_in(self) -> bool:
         """Check if already logged in via UI element or cookie change."""
@@ -348,6 +351,7 @@ class XiaoHongShuLogin(AbstractLogin):
             self._write_state("waiting_for_scan", "请使用小红书 App 扫描二维码")
 
         utils.logger.info(f"[XiaoHongShuLogin.login_by_qrcode] waiting for scan code login, remaining time is 120s")
+        utils.logger.info(f"[XiaoHongShuLogin.login_by_qrcode] remote_login={self._use_remote_login}, screenshot_file={self._screenshot_file}")
         try:
             await self.check_login_state(no_logged_in_session)
         except RetryError:
