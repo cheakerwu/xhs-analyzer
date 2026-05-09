@@ -171,8 +171,7 @@ function handleLoginState(taskId, data) {
     case "waiting_for_scan":
       showLoginOverlay();
       loginTitle.textContent = "请扫码登录";
-      loginScreenshot.classList.add("qrcode-image");
-      loginScreenshot.src = `/api/qrcode/${taskId}?t=${Date.now()}`;
+      showQrCodeImage(taskId);
       loginQrcodeArea.classList.remove("hidden");
       loginHint.textContent = data.message || "使用小红书 App 扫描二维码";
       loginSmsArea.classList.add("hidden");
@@ -183,9 +182,9 @@ function handleLoginState(taskId, data) {
     case "sms_needed":
       showLoginOverlay();
       loginTitle.textContent = "需要安全验证";
-      loginScreenshot.classList.remove("qrcode-image");
-      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
-      loginQrcodeArea.classList.add("hidden");
+      showQrCodeImage(taskId);
+      loginQrcodeArea.classList.remove("hidden");
+      loginHint.textContent = "请先扫码；如果已经扫码，请输入短信验证码或打开远程浏览器完成验证。";
       loginSmsArea.classList.remove("hidden");
       loginSmsHint.textContent = data.message || "请输入短信验证码";
       showRemoteBrowser(data, "也可以直接打开远程浏览器，在小红书页面里完成短信验证。");
@@ -252,6 +251,16 @@ function hideLoginOverlay() {
   loginScreenshot.classList.remove("qrcode-image");
   loginSmsInput.value = "";
   loginSmsError.classList.add("hidden");
+}
+
+function showQrCodeImage(taskId) {
+  loginScreenshot.classList.add("qrcode-image");
+  loginScreenshot.onerror = () => {
+    loginScreenshot.onerror = null;
+    loginScreenshot.classList.remove("qrcode-image");
+    loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+  };
+  loginScreenshot.src = `/api/qrcode/${taskId}?t=${Date.now()}`;
 }
 
 function showRemoteBrowser(data, fallbackText) {
