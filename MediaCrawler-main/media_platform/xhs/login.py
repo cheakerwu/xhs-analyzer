@@ -80,12 +80,26 @@ class XiaoHongShuLogin(AbstractLogin):
         return False
 
     async def _needs_sms_verification(self) -> bool:
-        """Check if the page is showing SMS verification prompt."""
+        """Check if the page is showing SMS verification or phone input prompt."""
         try:
             page_content = await self.context_page.content()
-            return "短信验证码" in page_content or "安全验证" in page_content
+            keywords = ["短信验证码", "安全验证", "验证码", "手机号验证", "请输入验证码"]
+            if any(kw in page_content for kw in keywords):
+                return True
+            # Check for verification input fields
+            for sel in [
+                "input[placeholder*='验证码']",
+                "input[placeholder*='手机号']",
+                "input[type='tel']",
+                "input[name*='code']",
+                "input[name*='captcha']",
+                "input[name*='phone']",
+            ]:
+                if await self.context_page.is_visible(sel, timeout=200):
+                    return True
         except Exception:
-            return False
+            pass
+        return False
 
     async def _has_captcha(self) -> bool:
         """Check if a CAPTCHA challenge is showing."""
@@ -190,6 +204,14 @@ class XiaoHongShuLogin(AbstractLogin):
                 await self._take_screenshot("xpath=//img[@class='qrcode-img']")
             else:
                 await self._take_screenshot()
+
+        # Debug: log page state
+        is_logged = await self._is_logged_in()
+        needs_sms = await self._needs_sms_verification()
+        has_captcha = await self._has_captcha()
+        has_qr = await self._is_showing_qrcode()
+        url = self.context_page.url
+        utils.logger.info(f"[check_login_state] logged_in={is_logged} sms={needs_sms} captcha={has_captcha} qr={has_qr} url={url}")
 
         # 1. Check UI element
         try:
