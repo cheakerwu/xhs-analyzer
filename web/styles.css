@@ -720,11 +720,23 @@ input:focus {
   justify-content: center;
 }
 
+.login-screenshot-wrap:has(.qrcode-image) {
+  min-height: 360px;
+  background: #fff;
+}
+
 .login-screenshot-wrap img {
   width: 100%;
   max-height: 70vh;
   display: block;
   object-fit: contain;
+}
+
+.login-screenshot-wrap img.qrcode-image {
+  width: min(360px, 82vw);
+  max-height: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .login-screenshot-wrap img[src=""] {

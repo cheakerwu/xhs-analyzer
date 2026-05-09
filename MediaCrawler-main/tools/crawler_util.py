@@ -104,7 +104,7 @@ def show_qrcode(qr_code) -> None:  # type: ignore
         # Remote mode: save QR code to file for web frontend to serve
         qrcode_file = os.getenv("XHS_QRCODE_FILE")
         if qrcode_file:
-            new_image.save(qrcode_file)
+            new_image.save(qrcode_file, format="PNG")
             utils.logger.info(f"[show_qrcode] QR code saved to {qrcode_file}")
             return
 
