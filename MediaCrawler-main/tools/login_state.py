@@ -35,10 +35,10 @@ def write_state(
 
 
 async def take_screenshot(screenshot_file: str, page) -> None:
-    """Take a screenshot of the current page."""
+    """Take a screenshot of the current page (JPEG, smaller size)."""
     tmp = screenshot_file + ".bak"
     try:
-        screenshot_bytes = await page.screenshot(full_page=False)
+        screenshot_bytes = await page.screenshot(full_page=False, type="jpeg", quality=60)
         with open(tmp, "wb") as f:
             f.write(screenshot_bytes)
         os.replace(tmp, screenshot_file)

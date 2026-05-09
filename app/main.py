@@ -131,7 +131,7 @@ async def screenshot_image(task_id: str) -> Response:
         )
     return FileResponse(
         task.screenshot_file,
-        media_type="image/png",
+        media_type="image/jpeg",
         headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
     )
 

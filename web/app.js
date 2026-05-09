@@ -140,7 +140,7 @@ function escapeHtml(value) {
 function startLoginPolling(taskId) {
   currentTaskId = taskId;
   stopLoginPolling();
-  loginPollTimer = setInterval(() => pollLoginState(taskId), 1500);
+  loginPollTimer = setInterval(() => pollLoginState(taskId), 3000);
 }
 
 function stopLoginPolling() {
@@ -276,15 +276,17 @@ loginSmsInput.addEventListener("keydown", (e) => {
 
 // Cancel button
 loginCancel.addEventListener("click", async () => {
-  if (!currentTaskId) return;
-  try {
-    await fetch(`/api/cancel/${currentTaskId}`, { method: "POST" });
-  } catch { /* ignore */ }
+  const tid = currentTaskId;
   stopLoginPolling();
   hideLoginOverlay();
   submitButton.disabled = false;
   submitButton.textContent = "重新分析";
   stageText.textContent = "已取消";
+  if (tid) {
+    try {
+      await fetch(`/api/cancel/${tid}`, { method: "POST" });
+    } catch { /* ignore */ }
+  }
 });
 
 // Retry button
