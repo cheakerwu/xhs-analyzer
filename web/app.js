@@ -12,6 +12,7 @@ const llmStateText = document.querySelector("#llmStateText");
 // Login overlay elements
 const loginOverlay = document.querySelector("#loginOverlay");
 const loginTitle = document.querySelector("#loginTitle");
+const loginStepStatus = document.querySelector("#loginStepStatus");
 const loginScreenshot = document.querySelector("#loginScreenshot");
 const loginQrcodeArea = document.querySelector("#loginQrcodeArea");
 const loginHint = document.querySelector("#loginHint");
@@ -168,9 +169,10 @@ function handleLoginState(taskId, data) {
     case "waiting_for_scan":
       showLoginOverlay();
       loginTitle.textContent = "请扫码登录";
+      loginStepStatus.textContent = "第 1 步：等待小红书 App 扫描二维码";
       showQrCodeImage(taskId);
       loginQrcodeArea.classList.remove("hidden");
-      loginHint.textContent = data.message || "使用小红书 App 扫描二维码";
+      loginHint.textContent = data.message || "二维码仍然有效。扫码并在手机上确认后，页面会自动进入下一步。";
       loginSmsArea.classList.add("hidden");
       loginFailedArea.classList.add("hidden");
       break;
@@ -178,9 +180,11 @@ function handleLoginState(taskId, data) {
     case "sms_needed":
       showLoginOverlay();
       loginTitle.textContent = "需要安全验证";
-      showQrCodeImage(taskId);
+      loginStepStatus.textContent = "第 2 步：已扫码，等待短信验证码";
+      loginScreenshot.classList.remove("qrcode-image");
+      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
       loginQrcodeArea.classList.remove("hidden");
-      loginHint.textContent = "请先扫码；如果已经扫码，请在下方输入短信验证码。";
+      loginHint.textContent = "二维码已经通过，当前需要完成短信验证。请输入手机收到的验证码。";
       loginSmsArea.classList.remove("hidden");
       loginSmsHint.textContent = data.message || "请输入短信验证码";
       loginFailedArea.classList.add("hidden");
@@ -200,6 +204,7 @@ function handleLoginState(taskId, data) {
     case "manual_required":
       showLoginOverlay();
       loginTitle.textContent = "需要手动验证";
+      loginStepStatus.textContent = "第 2 步：已扫码，但遇到平台安全验证";
       loginScreenshot.classList.remove("qrcode-image");
       loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
       loginQrcodeArea.classList.remove("hidden");
@@ -209,6 +214,8 @@ function handleLoginState(taskId, data) {
       break;
 
     case "logged_in":
+      loginStepStatus.textContent = "登录成功，正在继续采集数据";
+      stageText.textContent = "登录成功，正在继续采集";
       stopLoginPolling();
       hideLoginOverlay();
       break;
@@ -216,6 +223,7 @@ function handleLoginState(taskId, data) {
     case "login_failed":
       stopLoginPolling();
       loginTitle.textContent = "登录失败";
+      loginStepStatus.textContent = "登录未完成";
       loginQrcodeArea.classList.add("hidden");
       loginSmsArea.classList.add("hidden");
       loginFailedArea.classList.remove("hidden");
@@ -235,6 +243,7 @@ function showLoginOverlay() {
 
 function hideLoginOverlay() {
   loginOverlay.classList.add("hidden");
+  loginStepStatus.textContent = "等待二维码";
   loginQrcodeArea.classList.add("hidden");
   loginSmsArea.classList.add("hidden");
   loginFailedArea.classList.add("hidden");

@@ -81,18 +81,18 @@ class XiaoHongShuLogin(AbstractLogin):
     async def _needs_sms_verification(self) -> bool:
         """Check if the page is showing SMS verification or phone input prompt."""
         try:
+            if await self._is_showing_qrcode():
+                return False
             page_content = await self.context_page.content()
-            keywords = ["短信验证码", "安全验证", "验证码", "手机号验证", "请输入验证码"]
+            keywords = ["短信验证码", "安全验证", "手机号验证", "请输入验证码"]
             if any(kw in page_content for kw in keywords):
                 return True
             # Check for verification input fields
             for sel in [
                 "input[placeholder*='验证码']",
-                "input[placeholder*='手机号']",
                 "input[type='tel']",
                 "input[name*='code']",
                 "input[name*='captcha']",
-                "input[name*='phone']",
             ]:
                 if await self.context_page.is_visible(sel, timeout=200):
                     return True
@@ -250,8 +250,16 @@ class XiaoHongShuLogin(AbstractLogin):
         except Exception:
             pass
 
-        # 2. Check for SMS verification
-        if await self._needs_sms_verification():
+        # 2. Keep showing the QR state while the login page still displays it.
+        # The phone-login panel has verification fields even before the user scans,
+        # so QR visibility must win over SMS detection.
+        if has_qr:
+            if self._use_remote_login:
+                self._write_state("waiting_for_scan", "请使用小红书 App 扫描二维码")
+            return False
+
+        # 3. Check for SMS verification
+        if needs_sms:
             if self._use_remote_login:
                 utils.logger.info("[check_login_state] SMS verification detected.")
                 success = await self._handle_sms_verification(no_logged_in_session)
@@ -261,16 +269,12 @@ class XiaoHongShuLogin(AbstractLogin):
             else:
                 utils.logger.info("[check_login_state] SMS verification detected (no remote handler).")
 
-        # 3. Check for CAPTCHA
+        # 4. Check for CAPTCHA
         if await self._has_captcha():
             if self._use_remote_login:
                 await self._take_screenshot()
                 self._write_state("captcha", "遇到验证码，请在浏览器中手动完成验证")
             utils.logger.info("[check_login_state] CAPTCHA detected.")
-
-        # 4. Update state for waiting-for-scan (no screenshot needed — QR code is served separately)
-        if self._use_remote_login and await self._is_showing_qrcode():
-            self._write_state("waiting_for_scan", "请使用小红书 App 扫描二维码")
 
         # 5. Cookie-based fallback
         current_cookie = await self.browser_context.cookies()

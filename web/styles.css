@@ -690,6 +690,17 @@ input:focus {
   color: var(--text, #1d2520);
 }
 
+.login-step-status {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #b9e1c7;
+  border-radius: 8px;
+  background: #edf8f1;
+  color: var(--green-dark, #1f5c3f);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
 .login-screenshot-wrap {
   width: 100%;
   border: 1px solid var(--line, #dce5dd);
