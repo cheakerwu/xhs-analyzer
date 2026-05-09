@@ -287,6 +287,12 @@ class XiaoHongShuLogin(AbstractLogin):
                 self._write_state("logged_in", "登录成功！")
             return True
 
+        if self._use_remote_login:
+            self._write_state(
+                "scan_confirmed",
+                "二维码已通过，正在等待小红书确认登录状态。请检查手机端是否还有确认、授权或安全验证提示。",
+            )
+
         return False
 
     async def begin(self):

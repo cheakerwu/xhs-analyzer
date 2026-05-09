@@ -200,6 +200,18 @@ function handleLoginState(taskId, data) {
       }
       break;
 
+    case "scan_confirmed":
+      showLoginOverlay();
+      loginTitle.textContent = "已扫码，正在确认";
+      loginStepStatus.textContent = "第 2 步：二维码已通过，等待平台确认登录";
+      loginScreenshot.classList.remove("qrcode-image");
+      loginScreenshot.src = `/api/screenshot/${taskId}?t=${Date.now()}`;
+      loginQrcodeArea.classList.remove("hidden");
+      loginHint.textContent = data.message || "请查看手机端是否还有确认登录、授权或安全验证提示。后端正在持续检测登录状态。";
+      loginSmsArea.classList.add("hidden");
+      loginFailedArea.classList.add("hidden");
+      break;
+
     case "captcha":
     case "manual_required":
       showLoginOverlay();
