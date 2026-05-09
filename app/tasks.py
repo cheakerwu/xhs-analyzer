@@ -14,10 +14,10 @@ from app.analyzer import build_analysis
 from app.config import (
     DEFAULT_MAX_COMMENTS,
     DEFAULT_MAX_NOTES,
+    DEFAULT_HEADLESS,
     DEFAULT_SLEEP_SECONDS,
     MEDIA_CRAWLER_ROOT,
     PYTHON_EXECUTABLE,
-    REMOTE_BROWSER_URL,
     RUN_DATA_ROOT,
 )
 from app.data_loader import load_profile_run, latest_jsonl
@@ -175,10 +175,10 @@ class TaskManager:
             max_notes=task.request.max_notes or DEFAULT_MAX_NOTES,
             max_comments=task.request.max_comments_per_note or DEFAULT_MAX_COMMENTS,
             include_comments=task.request.include_comments,
-            headless=task.request.headless,
+            headless=DEFAULT_HEADLESS,
         )
 
-        # QR code / login state files for remote login
+        # QR code / login state files for web-based login
         qrcode_path = RUN_DATA_ROOT / f"{task.task_id}_qrcode.png"
         sms_code_path = RUN_DATA_ROOT / f"{task.task_id}_sms_code.txt"
         screenshot_path = RUN_DATA_ROOT / f"{task.task_id}_screenshot.png"
@@ -196,7 +196,6 @@ class TaskManager:
             "XHS_SMS_CODE_FILE": str(sms_code_path),
             "XHS_SCREENSHOT_FILE": str(screenshot_path),
             "XHS_LOGIN_STATE_FILE": str(login_state_path),
-            "XHS_REMOTE_BROWSER_URL": REMOTE_BROWSER_URL,
         }
         process = await asyncio.create_subprocess_exec(
             *command,

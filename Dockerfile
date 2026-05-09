@@ -5,7 +5,8 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
     PYTHONUTF8=1 \
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    XHS_ANALYZER_HEADLESS=true
 
 # Use Chinese pip mirror
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \

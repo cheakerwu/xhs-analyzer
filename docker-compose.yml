@@ -12,6 +12,7 @@ services:
       - .env
     environment:
       - XHS_ANALYZER_PYTHON=/usr/local/bin/python
+      - XHS_ANALYZER_HEADLESS=${XHS_ANALYZER_HEADLESS:-true}
     volumes:
       - ./data:/app/data
       - ./browser_data:/app/MediaCrawler-main/browser_data

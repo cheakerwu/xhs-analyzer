@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DEFAULT_MAX_COMMENTS, DEFAULT_MAX_NOTES, REMOTE_BROWSER_URL, WEB_ROOT
+from app.config import DEFAULT_HEADLESS, DEFAULT_MAX_COMMENTS, DEFAULT_MAX_NOTES, WEB_ROOT
 from app.history import get_history, list_history
 from app.llm_analysis import llm_enabled
 from app.models import AnalyzeRequest, HistoryItem, TaskCreated, TaskStatus
@@ -38,6 +38,7 @@ async def health() -> dict:
         "status": "ok",
         "default_max_notes": DEFAULT_MAX_NOTES,
         "default_max_comments": DEFAULT_MAX_COMMENTS,
+        "default_headless": DEFAULT_HEADLESS,
         "llm_enabled": llm_enabled(),
         "llm_model": llm_settings.model,
         "llm_has_api_key": llm_settings.has_api_key,
@@ -119,10 +120,6 @@ async def login_state(task_id: str) -> dict:
         if not text:
             return {"state": "unknown", "message": "等待登录状态..."}
         data = _json.loads(text)
-        if data.get("state") in {"waiting_for_scan", "sms_needed", "captcha", "manual_required"}:
-            if REMOTE_BROWSER_URL:
-                data.setdefault("remote_browser_url", REMOTE_BROWSER_URL)
-            data.setdefault("remote_browser_hint", "如遇到短信、滑块或安全验证，请打开远程浏览器手动完成。")
         return data
     except Exception:
         return {"state": "unknown", "message": "读取状态失败"}

@@ -61,6 +61,15 @@ chmod +x scripts/*.sh
 ```bash
 cd /opt/xhs-analyzer
 git pull
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+docker compose logs -f --tail=100
+```
+
+如果只是普通更新，也可以继续使用：
+
+```bash
 ./scripts/deploy.sh
 ```
 
@@ -79,6 +88,18 @@ XHS_LLM_API_KEY=你的Key
 XHS_LLM_BASE_URL=https://api.openai.com/v1
 XHS_LLM_MODEL=gpt-4o-mini
 ```
+
+## ECS 浏览器登录模式
+
+ECS 部署默认使用无头浏览器：
+
+```bash
+XHS_ANALYZER_HEADLESS=true
+```
+
+首次采集时，页面会弹出小红书登录二维码。用小红书 App 扫码后，登录态会保存在 ECS 的 `browser_data/` 挂载目录里，后续容器重启或镜像更新不会丢失。遇到短信验证码时，直接在网页弹窗中输入验证码。
+
+当前部署不再内置 noVNC / 远程桌面入口，也不需要开放 `6080` 端口。
 
 ## 数据持久化
 

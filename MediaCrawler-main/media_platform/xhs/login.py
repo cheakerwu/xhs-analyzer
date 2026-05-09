@@ -35,7 +35,6 @@ from tools import utils
 from tools.login_state import (
     clear_file,
     take_screenshot,
-    wait_for_sms_code,
     write_state,
 )
 
@@ -57,14 +56,10 @@ class XiaoHongShuLogin(AbstractLogin):
         self._state_file = os.getenv("XHS_LOGIN_STATE_FILE", "")
         self._screenshot_file = os.getenv("XHS_SCREENSHOT_FILE", "")
         self._sms_code_file = os.getenv("XHS_SMS_CODE_FILE", "")
-        self._remote_browser_url = os.getenv("XHS_REMOTE_BROWSER_URL", "")
         self._use_remote_login = bool(self._state_file)
 
     def _write_state(self, state: str, message: str, **kwargs) -> None:
         if self._state_file:
-            if state in {"sms_needed", "captcha", "manual_required", "waiting_for_scan"}:
-                kwargs.setdefault("remote_browser_url", self._remote_browser_url)
-                kwargs.setdefault("remote_browser_hint", "可打开远程浏览器完成小红书页面上的验证操作。")
             write_state(self._state_file, state, message, **kwargs)
 
     async def _take_screenshot(self, element_selector: str | None = None) -> None:
